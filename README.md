@@ -13,7 +13,7 @@ It's pretty gross and incomplete.
 Please see templates:
 
 ![](https://github.com/RainEggplant/express-mongoose-template/)
-![](https://github.com/RainEggplant/express-mongoose-template/)https://github.com/cdimascio/generator-express-no-stress-typescript/)
+![](https://github.com/cdimascio/generator-express-no-stress-typescript/)
 
 
 ## TODO - Running list
