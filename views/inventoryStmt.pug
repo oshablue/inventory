@@ -1,0 +1,175 @@
+extends index
+
+block append layout-content
+
+  div#isDetails 
+    hr
+    h3 InventoryStmt Details
+    //-each val, key in dataPayload  //- TODO actually now need to send and load ALL fields not just present fields
+    //-  | #{key}
+    each key in keysPayload 
+      | #{key}
+      if key === "quantities"       
+        //- in textarea, the surrounding square brackets get dropped (?) so re-add them - it is array
+        //- textarea(rows=10 name=key label=key).input--xs 
+        //-  | #{dataPayload[key]}
+        div#quantitiesTable
+          include quantitiesTable
+      //- TODO add more component information and a link? - it is by component_id not objectId
+      else if key === "component_id"
+        - let d = dataPayload.component_id
+        - let url = "/api/v1/components/" + d 
+        a(href=url) Go to component #{d}
+        input(type='text' name=key label=key value=(dataPayload[key])).input--xs
+      else 
+        input(type='text' name=key label=key value=(dataPayload[key])).input--xs
+      br
+
+      //- Need to now convert the componentType to dropdown?
+      //- probably need to put in there also then some return of the componentType 
+      //- list from the controller
+
+    button#submit(onclick="updateIS()")   
+      | Update 
+
+  div#rawData 
+    pre
+      =JSON.stringify(dataPayload, null, 4)
+  div#lineItemSchemaKeysPayload
+    br
+    =JSON.stringify(lineItemsSchemaKeysPayload)
+
+  script. 
+
+    $(document).ready( function () {
+      
+    });
+
+    var updateIS = function() {
+      // find rows in body only excluding the header:
+      // $('#lineItemsTable').find('tbody > tr')
+      // Below: gets all the inputs including the select in whole table all rows (5 at time of draft with no stored line items yet)
+      let qtyInputsAll = $('#quantitiesTable').find('input[type=text], select'); // TODO this ok with like 200 line items?
+      // Below: gets the non-table (non-lineItem) inputs (6 at time of draft)
+      let inputs = $('#isDetails').find('input[type=text], select').not($(qtyInputsAll)); // now omit textarea - not using anymore
+      let jj = {};
+      $(inputs).each( function (ind, val) {
+        //console.log($(this).attr('name'));
+        let v = '';
+        if ( $(this).attr('name') === 'quantities' ) {
+          // pug + textarea or something drops the array brackets (sq) and the double quotes around keys
+          // https://stackoverflow.com/questions/44562635/regular-expression-add-double-quotes-around-values-and-keys-in-javascript
+          // let v = $(this).val().toString().replace(/([a-zA-Z0-9-]+):([a-zA-Z0-9-]+)/g, "\"$1\":\"$2\"");
+          // v = JSON.parse(v); // was for regular input type-text
+          //v = JSON.parse($(this).text());
+        } else {
+          v = $(this).val();
+        }
+        jj[$(this).attr('name')] = v;
+      });
+
+      // Accumulate the quantities entries 
+      jj["quantities"] = [];
+      let qtyKeys = $('#quantitiesTable').find('table > thead > tr > th').map( (i, h) => $(h).text() ).toArray();
+      let qtyRows = $('#quantitiesTable').find('table > tbody > tr');
+      $(qtyRows).each( function( ind, row ) {
+        let qtyInputs = $(row).find('input[type="text"]');
+        let qtyRow = {};
+        let bInclude = false;
+        qtyKeys.forEach( function ( key, ind ) {
+          let val = $(qtyInputs).filter('[name=' + key + ']').val().trim();
+          if ( val !== '' ) {
+            bInclude = true;          // if any content in any blank, then we include this row
+            qtyRow[key] = val;        // and also so we skip like blank _id - model includes default values
+          }         
+        });
+        if ( bInclude ) {
+          jj.quantities.push(qtyRow); // push adds to the end of the array
+        }
+      });
+
+      
+      //- let lineItemRows = $('#lineItemsTable').find('tbody > tr');
+      //- let lineItems = [];
+      //- $(lineItemRows).each( function (ind, val) {
+      //-   let addThisRow = false;
+      //-   let rowVals = {};
+      //-   // Get the text of the selected option:
+      //-   //$(lineItemRows[0]).find('select option:selected').text()
+      //-   // Get just the value (hidden within the option list items)
+      //-   //$(lineItemRows[0]).find('select').val()
+      //-   // Note that when value = null and thus doesn't exist in the DOM,
+      //-   // the .val() function will return the option text instead aka Not Set here
+      //-   // Setting value=null in pug in the actual DOM / markup just creates no value 
+      //-   // attribute in the select option for that item
+      //-   let comp_id = $(this).find('select').val();
+      //-   addThisRow = comp_id !== "Not Set" ? true : addThisRow;
+      //-   $(this).find('input[type="text"]').not('[name="_id"]').each( function (ind, val) {
+      //-     // TODO refDess from csv to array? format? sanitize?
+      //-     rowVals[$(this).attr('name')] = $(this).val();
+      //-     addThisRow = $(this).val().trim() !== '' ? true : addThisRow;
+      //-   });
+      //-   if ( addThisRow ) {
+      //-     comp_id === "Not Set" ? rowVals['component'] = '' : rowVals['component'] = comp_id;
+      //-     lineItems.push(rowVals);
+      //-   }
+      //- });
+      //- jj["lineItems"] = lineItems;
+      console.log(jj);
+      //- return; // temp 
+      fetch('/api/v1/inventoryStmts/' + jj.inventoryStmt_id, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(jj)
+      })
+      .then(res => {
+        //console.log(res);
+        // res.json() will pull the json data object only out of the response object
+        return res; //.json();
+        // TODO *** in controller or here need to probably reload the page with updated data ***
+      })
+      .then(data => {
+        console.log(data);
+        // TODO move this to middleware? util script?
+        if ( data.status === 200 ) {
+          //location.reload();
+          let e = $('#isDetails');
+          $(e).addClass('updateOk');
+          jQuery('<div>', {
+            id: 'tempNotification',
+            class: 'bg-success u-inline u-round-xs p-1 mx-4', // from cirrus-ui
+            title: 'Just letting you know ...',
+            text: "Update OK!"
+          }).appendTo(e);
+          data.json()
+          .then( (justTheSent) => {
+            console.log(justTheSent);
+            let rde = $("#rawData");
+            $(rde).html(JSON.stringify(justTheSent));
+            $(rde).addClass('bg-success text-indigo-600');      // class from cirrus-ui
+            setTimeout ( () => {
+              // https://jqueryui.com/removeClass/
+              // can add callback for completion after 2000
+              $(rde).removeClass('bg-success text-indigo-600', 1500); 
+            }, 800, rde);
+          })
+          setTimeout ( () => {
+            // https://jqueryui.com/removeClass/
+            // can add callback for completion after 2000
+            $(e).removeClass('updateOk', 1000, () => {
+              setTimeout(function() {
+                $('#tempNotification').remove();
+              }, 500 );
+            }); 
+          }, 1000, e);
+          setTimeout ( () => {
+            location.reload();
+          }, 2000);
+        }
+      });
+      // TODO so now what to do with the UI -- the controller sends 200
+      // but how do we get the page reloaded or the section reloaded?
+      // Or just flash ok or error --- 
+    }

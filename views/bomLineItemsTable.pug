@@ -1,0 +1,65 @@
+table.table.bordered.small
+  - dataPayload.lineItems = dataPayload.lineItems.sort ( function (li1, li2) { return li1.lineNumber - li2.lineNumber; });
+  thead 
+    each key in lineItemsSchemaKeysPayload 
+      th(class=key) #{key}
+  //- first row is blank/default inputs for adding a new entry
+  tr
+    each key in lineItemsSchemaKeysPayload 
+      if key === "component"
+        td 
+          include componentsSelectList.pug
+      else
+        td 
+          input(type='text' name=key label=key).input--xs
+    //- then real existing entries
+    each lineItem in dataPayload.lineItems
+      tr
+        each key in lineItemsSchemaKeysPayload
+          //- if key === "bom_id"
+          //-   td 
+          //-     a(href="/api/v1/boms/" + lineItem[key]) Edit #{lineItem[key]}
+          if key === "refDess"
+            td 
+              - let v = lineItem[key]||"";
+              - v = v.toString(); //- .replace(/^\[/,''); //- not needed (yet)
+              input(type='text' name=key label=key value=v).input--xs.input--xxs 
+          else if key === "component"
+            td 
+              include componentsSelectList.pug
+          else if key === "inventoryStmts"
+            td 
+              - let iss = (lineItem.component && lineItem.component.inventoryStmts) ? lineItem.component.inventoryStmts : []    //- if nothing will come back as empty array
+              - let issTxt = iss[0] ? JSON.stringify(iss[0]) : ""
+              - let qty = iss[0] ? iss[0].quantities[0].quantity.toString() : "0"
+              //- TODO Add new one link otherwise or always - handle also the click to see / edit
+              if iss[0] 
+                a(href="/api/v1/inventoryStmts/" + iss[0].inventoryStmt_id) #{qty} 
+          else if key === 'componentSelectionEvents'
+            //- check verify that component matches current component
+            //- in most recent componentSelectionEvent
+            //- Show the eventType
+            //- and eventually something clickable to get history list and see subs or prior or initial
+            //- console.log(lineItem.componentSelectionEvents)
+            - let cse = ( lineItem.componentSelectionEvents && lineItem.componentSelectionEvents[0] ) ? lineItem.componentSelectionEvents[0] : ''
+            //- data-customAttribute is DOC ok in HTML5 (?)
+            //- data-cseId gets actually created as all LOWER CASE like data-cseId 
+            //- and the jquery is case sensitive for finding / filtering things
+            //- also could put the data-cseid etc tags in the td
+            if cse
+              td
+                - let cseText = `(${lineItem.componentSelectionEvents.length}) ` + cse.eventType
+                input(type='text' disabled=true name=key label=key value=cseText data-cseId=cse._id data-componentId=cse.component).input--xs.input--xxs
+            else
+              td
+                | (0) 
+          else if key === 'qtyPerBoard'
+            td 
+              - let v = lineItem.refDess.toString()||"" //- TODO this should prob be virt in model
+              - let m = (v.match(/,/g) || []).length
+              - let c = m ? "," : " "
+              - let q = v ? v.split(c).length : 0
+              input(type='text' disabled=true name=key label=key value=q).input--xs.input--xxs
+          else
+            td
+              input(type='text' name=key title=lineItem[key] label=key value=lineItem[key]||"").input--xs.input--xxs

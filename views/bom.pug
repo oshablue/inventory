@@ -1,0 +1,463 @@
+extends index
+
+block append layout-content
+
+  div#bomDetails 
+    hr
+    h3 BOM Details
+    //-each val, key in dataPayload  //- TODO actually now need to send and load ALL fields not just present fields
+    //-  | #{key}
+    each key in keysPayload 
+      | #{key}
+      if key === "lineItems"
+        div#lineItemsTable
+          include bomLineItemsTable.pug
+      else 
+        input(type='text' name=key label=key value=(dataPayload[key])).input--xs
+      br
+
+      //- Need to now convert the componentType to dropdown?
+      //- probably need to put in there also then some return of the componentType 
+      //- list from the controller
+
+    button#submit(onclick="updateBom()")   
+      | Update 
+    button#export(onclick="exportBom()")
+      | Export
+    button#deriveNewBom(onclick="deriveNewBom()")
+      | Derive New BOM Rev/Variant
+    
+    br
+    hr 
+    br 
+
+    button#deleteBom(onclick="deleteBom()").bg-danger
+      | Delete this BOM
+
+
+  div#dataPayload 
+    pre
+      =JSON.stringify(dataPayload, null, 4)
+    //- br
+    //- =JSON.stringify(lineItemsSchemaKeysPayload)
+
+
+
+
+  script. 
+
+    $(document).ready( function () {
+      
+      // Vet and post process the lineItems table 
+      // since we don't know what order the vars come in 
+      // we'd have to script to check off all entries complete 
+      // or we can maybe just put a post process lineItems here (?)
+
+      checkRows();
+      addMoreOnClicks();
+
+    });
+
+
+
+    var addMoreOnClicks = function () {
+
+      // inputs themselves are disabled and not clickable it seems
+      $('input[name="componentSelectionEvents"]').parent("td").click(cseClick);
+
+    } // </ addMoreOnClicks() >
+
+
+
+    var cseClick = function () {
+
+      // this = td with a child input
+      //alert ( $(this).find('input').attr("data-cseid") );
+      const cseid = $(this).find('input').attr("data-cseid");
+      const lineItemId = $(this).parent("tr").find('input[name="_id"]').val();
+
+      let lineItemsInputs = $('#lineItemsTable').find('input[type=text], select');
+      let inputs = $('#bomDetails').find('input[type=text], select').not($(lineItemsInputs));
+      jj = {};
+      jj["bom_id"] = inputs.filter('[name="bom_id"]').val();
+
+      let url = '/api/v1/boms/' + jj.bom_id  + '/cseEdit/' + lineItemId;
+      location.assign(url);
+      
+
+      //- fetch('/api/v1/boms/' + jj.bom_id  + '/cseEdit/' + lineItemId, {
+      //-   method: 'GET'
+      //- })
+      //- .then(res => res.text())
+      //- .then(res => console.log(res))
+      //- .catch(error => {
+      //-   console.error('Error:', error);
+      //- });
+
+
+    } // </ cseClick >
+
+
+    var checkRows = function () {
+
+      let lineItemRows = $('#lineItemsTable').find('tbody > tr');
+      let lineItems = [];
+      $(lineItemRows).each( function (ind, val) {
+        let compIdFromSelect = $(this).find('select').val();
+        // $(this).find("input[name='componentSelectionEvents']").attr("data-cseid")
+        // or if in the td holding the input then could use like .parent("td").attr("...)
+        // first row likely blank for additional input methods
+        let compIdFromCse = $(this).find("input[name='componentSelectionEvents']").attr("data-componentid");
+        if ( compIdFromSelect && compIdFromCse ) {
+          if ( compIdFromSelect !== compIdFromCse ) {
+            $(this).find("input[name='componentSelectionEvents']").addClass("bg-danger").attr("title", "Component Ids in Select and selection event showing as current do not match!");
+          }
+        }
+      });
+
+    } // </ checkRows() >
+
+
+
+
+    var deleteBom = function () {
+
+      let lineItemsInputs = $('#lineItemsTable').find('input[type=text], select');
+      let inputs = $('#bomDetails').find('input[type=text], select').not($(lineItemsInputs));
+      jj = {};
+      jj["bom_id"] = inputs.filter('[name="bom_id"]').val();
+      fetch('/api/v1/boms/' + jj.bom_id, {
+        method: 'DELETE'
+      })
+        .then(res => res.text())
+        .then(res => console.log(res))
+        .catch(error => {
+          console.error('Error:', error);
+        });
+
+    } // </ deleteBom >
+
+
+
+
+    var deriveNewBom = function() {
+
+      // This all derived from the export function
+
+      // Get the lineItems row inputs
+      let lineItemsInputs = $('#lineItemsTable').find('input[type=text], select'); // TODO this ok with like 200 line items?
+      // Get the basic main BOM inputs, less the _id
+      let inputs = $('#bomDetails').find('input[type=text], select').not($(lineItemsInputs)).not('[name="_id"]').not('[name="bom_id"]');
+      //let bomMongooseId = $('#bomDetails').find('input[type=text][name="_id"]').not($(lineItemsInputs)).val();
+      let bomMongooseId = $('#bomDetails').find('input[type=text][name="bom_id"]').not($(lineItemsInputs)).val();
+      let jj = {};
+
+      // Basic BOM items without the line items
+      $(inputs).each( function (ind, val) {
+        jj[$(this).attr('name')] = $(this).val();
+      });
+      if ( bomMongooseId ) {
+        jj["derivedFromBom"] = bomMongooseId;
+      }
+      
+      // Populate for now the componentSelectionEvents from the JSON dataPayload - grab here
+      let j = JSON.parse($('#dataPayload').text());
+
+      let lineItemRows = $('#lineItemsTable').find('tbody > tr');
+      let lineItems = [];
+      $(lineItemRows).each( function (ind, val) {
+        let addThisRow = false;
+        let rowVals = {};
+        let comp_id = $(this).find('select').val();
+        addThisRow = comp_id !== "Not Set" ? true : addThisRow;
+        $(this).find('input[type="text"]').each( function (ind, val) {
+          rowVals[$(this).attr('name')] = $(this).val();
+          addThisRow = $(this).val().trim() !== '' ? true : addThisRow;
+        });
+        if ( addThisRow ) {
+          comp_id === "Not Set" ? rowVals['component'] = '' : rowVals['component'] = comp_id;
+          let rowIndex = j.lineItems.findIndex(v => v._id === rowVals._id);
+          rowVals["componentSelectionEvents"] = j.lineItems[rowIndex].componentSelectionEvents;
+          // For duplicate / derived BOM here, remove the cse and row _id's
+          delete rowVals._id;
+          // But now because the model required an update wherein the _id is explicitly created (not implicitly)
+          // we have to create a new one!
+          // but on client side that requires some extra inclusions here ... since mongoose isn't here as a ref 
+          // so we could do instead on the server side 
+          if ( rowVals.componentSelectionEvents ) {
+            rowVals["componentSelectionEvents"] = rowVals.componentSelectionEvents.map( (cse) => {
+              delete cse._id;
+              return cse;
+            });
+          }
+          lineItems.push(rowVals);
+          if ( comp_id 
+          && rowVals.componentSelectionEvents 
+          && rowVals.componentSelectionEvents[0] 
+          && rowVals.componentSelectionEvents[0].component) {
+            if ( comp_id !== rowVals.componentSelectionEvents[0].component ) {
+              console.warn(`Problem: component IDs do NOT match for row ${rowVals}`);
+            }
+          } else {
+            console.warn(`Problem with component or componentSelectionEvent in ${rowVals}`);
+          }
+        } // </ if addthisRow
+      });
+      jj["lineItems"] = lineItems;
+      console.log(jj);
+      //return; // temp 
+      fetch('/api/v1/boms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(jj)
+      })
+      .then(res => {
+        //console.log(res);
+        // res.json() will pull the json data object only out of the response object
+        return res; //.json();
+        // TODO *** in controller or here need to probably reload the page with updated data ***
+      })
+      .then(data => {
+        console.log(data);
+        // TODO move this to middleware? util script?
+        if ( data.status === 200 ) {
+          //location.reload();
+          let e = $('#bomDetails');
+          $(e).addClass('updateOk');
+          jQuery('<div>', {
+            id: 'tempNotification',
+            class: 'bg-success u-inline u-round-xs p-1 mx-4', // from cirrus-ui
+            title: 'Just letting you know ...',
+            text: "Update OK!"
+          }).appendTo(e);
+          data.json()
+          .then( (justTheSent) => {
+            console.log(justTheSent);
+            let rde = $("#rawData");
+            $(rde).html(JSON.stringify(justTheSent));
+            $(rde).addClass('bg-success text-indigo-600');      // class from cirrus-ui
+            setTimeout ( () => {
+              // https://jqueryui.com/removeClass/
+              // can add callback for completion after 2000
+              $(rde).removeClass('bg-success text-indigo-600', 1500); 
+            }, 800, rde);
+          })
+          setTimeout ( () => {
+            // https://jqueryui.com/removeClass/
+            // can add callback for completion after 2000
+            $(e).removeClass('updateOk', 1000, () => {
+              setTimeout(function() {
+                $('#tempNotification').remove();
+              }, 500 );
+            }); 
+          }, 1000, e);
+          setTimeout ( () => {
+            location.reload();
+          }, 2000);
+        }
+      });
+
+    } // </ deriveNewBom() >
+    
+
+    var exportBom = function() {
+
+      let lineItemsInputs = $('#lineItemsTable').find('input[type=text], select');
+      let inputs = $('#bomDetails').find('input[type=text], select').not($(lineItemsInputs));
+      let jj = {};
+      jj["bom_id"] = inputs.filter('[name="bom_id"]').val(); // find is for descendants //inputs.find("input[name='bom_id']").val();
+
+      let url = '/api/v1/boms/' + jj.bom_id + '/export';
+
+      location.assign(url);
+
+      //- fetch('/api/v1/boms/' + jj.bom_id + '/export', {
+      //-   method: 'GET',
+      //-   headers: {
+      //-     'Content-Type': 'application/json'
+      //-   },
+      //-   //body: JSON.stringify(jj)
+      //- })
+      //- .then(res => {
+      //-   //console.log(res);
+      //-   // res.json() will pull the json data object only out of the response object
+      //-   return res; //.json();
+      //-   // TODO *** in controller or here need to probably reload the page with updated data ***
+      //- });
+      //- .then(data => {
+      //-   console.log(data);
+      //-   // TODO move this to middleware? util script?
+      //-   if ( data.status === 200 ) {
+      //-     //location.reload();
+      //-     let e = $('#bomDetails');
+      //-     $(e).addClass('updateOk');
+      //-     jQuery('<div>', {
+      //-       id: 'tempNotification',
+      //-       class: 'bg-success u-inline u-round-xs p-1 mx-4', // from cirrus-ui
+      //-       title: 'Just letting you know ...',
+      //-       text: "Update OK!"
+      //-     }).appendTo(e);
+      //-     data.json()
+      //-     .then( (justTheSent) => {
+      //-       console.log(justTheSent);
+      //-       let rde = $("#rawData");
+      //-       $(rde).html(JSON.stringify(justTheSent));
+      //-       $(rde).addClass('bg-success text-indigo-600');      // class from cirrus-ui
+      //-       setTimeout ( () => {
+      //-         // https://jqueryui.com/removeClass/
+      //-         // can add callback for completion after 2000
+      //-         $(rde).removeClass('bg-success text-indigo-600', 1500); 
+      //-       }, 800, rde);
+      //-     })
+      //-     setTimeout ( () => {
+      //-       // https://jqueryui.com/removeClass/
+      //-       // can add callback for completion after 2000
+      //-       $(e).removeClass('updateOk', 1000, () => {
+      //-         setTimeout(function() {
+      //-           $('#tempNotification').remove();
+      //-         }, 500 );
+      //-       }); 
+      //-     }, 1000, e);
+      //-     setTimeout ( () => {
+      //-       location.reload();
+      //-     }, 2000);
+      //-   }
+      //- });
+
+    } // </ exportBom() >
+
+
+
+
+    var updateBom = function() {
+      // find rows in body only excluding the header:
+      // $('#lineItemsTable').find('tbody > tr')
+      // Below: gets all the inputs including the select in whole table all rows (5 at time of draft with no stored line items yet)
+      let lineItemsInputs = $('#lineItemsTable').find('input[type=text], select'); // TODO this ok with like 200 line items?
+      // Below: gets the non-table (non-lineItem) inputs (6 at time of draft)
+      let inputs = $('#bomDetails').find('input[type=text], select').not($(lineItemsInputs));
+      let jj = {};
+      $(inputs).each( function (ind, val) {
+        //console.log($(this).attr('name'));
+        jj[$(this).attr('name')] = $(this).val();
+      });
+      // To store any nested / ref / ObjectId - we need to convert this
+      // TODO could do this in the update controller (service really)
+      if ( jj.componentType ) {
+        //jj.componentType = jj.componentType.component_type_id; // Nope we use actual _id for this
+        //console.log(JSON.parse(jj.componentType));
+        // From when the componentType was just stringified of the componentType model:
+        //jj.componentType = JSON.parse(jj.componentType)._id;
+      }
+
+      // Populate for now the componentSelectionEvents from the JSON dataPayload 
+      // from the full entity for each 
+      // TODO how do we update the component selection then?
+      // anyway...
+      let j = JSON.parse($('#dataPayload').text());
+      //j.lineItems.findIndex(v => v._id === '633236eee453bf11aa46d46f')
+      // To grab the JSON back and recreate the response dataPayload
+      // let j = JSON.parse($('#dataPayload').text());
+      // And then to search for the index of the lineItems array with a particular _id 
+      // j.lineItems.findIndex(v => v._id === '633236eee453bf11aa46d46f')
+      
+      let lineItemRows = $('#lineItemsTable').find('tbody > tr');
+      let lineItems = [];
+      $(lineItemRows).each( function (ind, val) {
+        let addThisRow = false;
+        let rowVals = {};
+        // Get the text of the selected option:
+        //$(lineItemRows[0]).find('select option:selected').text()
+        // Get just the value (hidden within the option list items)
+        //$(lineItemRows[0]).find('select').val()
+        // Note that when value = null and thus doesn't exist in the DOM,
+        // the .val() function will return the option text instead aka Not Set here
+        // Setting value=null in pug in the actual DOM / markup just creates no value 
+        // attribute in the select option for that item
+        let comp_id = $(this).find('select').val();
+        addThisRow = comp_id !== "Not Set" ? true : addThisRow;
+        //$(this).find('input[type="text"]').not('[name="_id"]').each( function (ind, val) {
+        $(this).find('input[type="text"]').each( function (ind, val) {
+          // TODO refDess from csv to array? format? sanitize?
+          rowVals[$(this).attr('name')] = $(this).val();
+          addThisRow = $(this).val().trim() !== '' ? true : addThisRow;
+        });
+        if ( addThisRow ) {
+          comp_id === "Not Set" ? rowVals['component'] = '' : rowVals['component'] = comp_id;
+          let rowIndex = j.lineItems.findIndex(v => v._id === rowVals._id);
+          rowVals["componentSelectionEvents"] = j.lineItems[rowIndex].componentSelectionEvents;
+          lineItems.push(rowVals);
+          if ( comp_id 
+          && rowVals.componentSelectionEvents 
+          && rowVals.componentSelectionEvents[0] 
+          && rowVals.componentSelectionEvents[0].component) {
+            if ( comp_id !== rowVals.componentSelectionEvents[0].component ) {
+              console.warn(`Problem: component IDs do NOT match for row ${rowVals}`);
+            }
+          } else {
+            console.warn(`Problem with component or componentSelectionEvent in ${rowVals}`);
+          }
+          
+        }
+      });
+      jj["lineItems"] = lineItems;
+      console.log(jj);
+      //return; // temp 
+      fetch('/api/v1/boms/' + jj.bom_id, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(jj)
+      })
+      .then(res => {
+        //console.log(res);
+        // res.json() will pull the json data object only out of the response object
+        return res; //.json();
+        // TODO *** in controller or here need to probably reload the page with updated data ***
+      })
+      .then(data => {
+        console.log(data);
+        // TODO move this to middleware? util script?
+        if ( data.status === 200 ) {
+          //location.reload();
+          let e = $('#bomDetails');
+          $(e).addClass('updateOk');
+          jQuery('<div>', {
+            id: 'tempNotification',
+            class: 'bg-success u-inline u-round-xs p-1 mx-4', // from cirrus-ui
+            title: 'Just letting you know ...',
+            text: "Update OK!"
+          }).appendTo(e);
+          data.json()
+          .then( (justTheSent) => {
+            console.log(justTheSent);
+            let rde = $("#rawData");
+            $(rde).html(JSON.stringify(justTheSent));
+            $(rde).addClass('bg-success text-indigo-600');      // class from cirrus-ui
+            setTimeout ( () => {
+              // https://jqueryui.com/removeClass/
+              // can add callback for completion after 2000
+              $(rde).removeClass('bg-success text-indigo-600', 1500); 
+            }, 800, rde);
+          })
+          setTimeout ( () => {
+            // https://jqueryui.com/removeClass/
+            // can add callback for completion after 2000
+            $(e).removeClass('updateOk', 1000, () => {
+              setTimeout(function() {
+                $('#tempNotification').remove();
+              }, 500 );
+            }); 
+          }, 1000, e);
+          setTimeout ( () => {
+            location.reload();
+          }, 2000);
+        }
+      });
+      // TODO so now what to do with the UI -- the controller sends 200
+      // but how do we get the page reloaded or the section reloaded?
+      // Or just flash ok or error --- 
+    }

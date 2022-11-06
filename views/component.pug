@@ -1,0 +1,137 @@
+extends index
+
+block append layout-content
+
+  div#componentDetails 
+    hr
+    h3 Component Details
+    //-each val, key in dataPayload  //- TODO actually now need to send and load ALL fields not just present fields
+    //-  | #{key}
+    each key in keysPayload 
+      | #{key}
+      if key === "componentType" 
+        select(name=key)
+          option(value=null) Not Set
+          each opt in componentTypesPayload
+            - var oid = opt._id.toString() //- does not work without toString
+            //- var vid = val._id.toString() //- does not work without toString
+            - var vid = ((dataPayload[key] || '')._id || '').toString()
+            //- console.log(typeof(oid), typeof(vid)) //- logs to terminal running express (not brower dev tools)
+            //- console.log( oid === vid)             //- same as above
+            option(value=opt._id selected=(oid === vid)) #{opt.name}
+      else if key === "dists"
+        div#distributors
+          | Add one: 
+          div#distsGroup
+            input(type='text' name='dpn')
+            select(name='dist')
+              each dist in distsPayload.distList 
+                option(value=dist) #{dist}
+          if dataPayload[key]
+            each distsGroup in dataPayload[key]
+              div#distsGroup
+                input(type='text' value=distsGroup.dpn)
+                select(name=key)
+                  each dist in distsPayload.distList 
+                    - var distText = dist.toString()
+                    - var thisDist = distsGroup.dist || "" //- needs work - not right - is nested select really and array
+                    //- CAUTION assuming unique - even if using currently enum
+                    option(value=distText selected=(distText === thisDist)) #{distText} 
+      else 
+        input(type='text' name=key label=key value=(dataPayload[key]))
+      br
+
+      //- Need to now convert the componentType to dropdown?
+      //- probably need to put in there also then some return of the componentType 
+      //- list from the controller
+
+    button#submit(onclick="updateComponent()")   
+      | Update 
+
+  div#rawData 
+    =JSON.stringify(dataPayload)
+
+  script. 
+    var updateComponent = function() {
+      //alert($('#componentDetails').find('input, select').length);
+      let distribInputs = $('#distributors').find('input[type=text], select');
+      let inputs = $('#componentDetails').find('input[type=text], select').not($(distribInputs));
+      let jj = {};
+      $(inputs).each( function (ind, val) {
+        //console.log($(this).attr('name'));
+        jj[$(this).attr('name')] = $(this).val();
+      });
+      // To store any nested / ref / ObjectId - we need to convert this
+      // TODO could do this in the update controller (service really)
+      if ( jj.componentType ) {
+        //jj.componentType = jj.componentType.component_type_id; // Nope we use actual _id for this
+        //console.log(JSON.parse(jj.componentType));
+        // From when the componentType was just stringified of the componentType model:
+        //jj.componentType = JSON.parse(jj.componentType)._id;
+      }
+      
+      let distribDivs = $('#distributors').children('div');
+      let dists = [];
+      $(distribDivs).each( function (ind, val) {
+        let dist = $(this).find('select').val();
+        let dpn = $(this).find('input[type=text]').val().trim(); // TODO sanitize
+        if ( dpn && dpn.length > 0 && dist !== "Not Set" ) { // only store if DPN is put in as something
+          dists.push( { "dist" : dist, "dpn" : dpn });
+        }
+      });
+      jj["dists"] = dists;
+      //console.log(distribDivs);
+      //console.log(dists)
+      console.log(jj);
+      fetch('/api/v1/components/' + jj.component_id, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(jj)
+      })
+      .then(res => {
+        //console.log(res);
+        // res.json() will pull the json data object only out of the response object
+        return res; //.json();
+        // TODO *** in controller or here need to probably reload the page with updated data ***
+      })
+      .then(data => {
+        console.log(data);
+        // TODO move this to middleware? util script?
+        if ( data.status === 200 ) {
+          let e = $('#componentDetails');
+          $(e).addClass('updateOk');
+          jQuery('<div>', {
+            id: 'tempNotification',
+            class: 'bg-success u-inline u-round-xs p-1 mx-4', // from cirrus-ui
+            title: 'Just letting you know ...',
+            text: "Update OK!"
+          }).appendTo(e);
+          data.json()
+          .then( (justTheSent) => {
+            console.log(justTheSent);
+            let rde = $("#rawData");
+            $(rde).html(JSON.stringify(justTheSent));
+            $(rde).addClass('bg-success text-indigo-600');      // class from cirrus-ui
+            setTimeout ( () => {
+              // https://jqueryui.com/removeClass/
+              // can add callback for completion after 2000
+              $(rde).removeClass('bg-success text-indigo-600', 2500); 
+            }, 800, rde);
+          })
+          setTimeout ( () => {
+            // https://jqueryui.com/removeClass/
+            // can add callback for completion after 2000
+            $(e).removeClass('updateOk', 2000, () => {
+              setTimeout(function() {
+                $('#tempNotification').remove();
+              }, 500 );
+            }); 
+          }, 1000, e);
+        }
+      });
+      // TODO so now what to do with the UI -- the controller sends 200
+      // but how do we get the page reloaded or the section reloaded?
+      // Or just flash ok or error --- 
+    }

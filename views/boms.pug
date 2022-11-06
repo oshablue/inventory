@@ -1,0 +1,31 @@
+extends index
+
+block append layout-content
+
+  #bomDetails 
+    hr
+    h3 BOMs List
+
+    table.table.bordered.small
+      tr 
+        each key in keysPayload 
+          th #{key}
+        each doc in dataPayload
+          tr
+            each key in keysPayload
+              if key === "bom_id"
+                td 
+                  a(href="/api/v1/boms/" + doc[key]) Edit #{doc[key]}
+              else if key === "lineItems"
+                td 
+                  | #{doc[key] ? doc[key].length : ''}
+              else
+                td 
+                  | #{JSON.stringify(doc[key])}
+
+  #keysPayload 
+    =JSON.stringify(keysPayload)
+
+  #rawData 
+    =JSON.stringify(dataPayload)
+

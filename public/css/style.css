@@ -1,0 +1,58 @@
+/* public/css/style.css */
+
+body {
+    background: rgb(154, 184, 184);
+}
+
+pre {
+  font-size: x-small;
+}
+
+.updateOk {
+  background: green;
+  transition: opacity 3s ease-in-out;
+  opacity: 1;
+}
+
+#lineItemsTable > table > tbody a {
+  font-size: 0.65rem;
+}
+
+#lineItemsTable > table.small td,
+#lineItemsTable > table.small th {
+  padding: 0.05rem 0.1rem;
+}
+
+#lineItemsTable > table select.input--xs {
+  font-size: 0.65rem;
+  padding: 0.2rem 0.6rem;
+}
+ 
+#lineItemsTable > table > tbody > tr > td > input.input--xs.input--xxs {
+  padding: 0.1rem 0.1rem; /* top/bottom ... right/left */
+}
+
+#lineItemsTable > table {
+  table-layout: fixed;
+}
+
+#lineItemsTable > table th {
+  font-size: xx-small;
+  overflow-wrap: break-word;
+}
+
+#lineItemsTable > table th.lineNumber {
+  width: 60px;
+}
+
+#lineItemsTable > table th.qtyPerBoard {
+  width: 60px;
+}
+
+#lineItemsTable > table th._id {
+  width: 40px;
+}
+
+#lineItemsTable > table th.componentSelectionEvents {
+  width: 100px;
+}

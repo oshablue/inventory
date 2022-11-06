@@ -1,0 +1,23 @@
+extends index
+
+block append layout-content
+
+  #componentDetails 
+    hr
+    h3 Component Details
+
+    table.table.bordered.small
+      tr 
+        each key in keysPayload 
+          th #{key}
+        each doc in dataPayload
+          tr
+            each key in keysPayload
+              if key === "component_id"
+                td 
+                  a(href="/api/v1/components/" + doc[key]) Edit #{doc[key]}
+              else
+                td #{JSON.stringify(doc[key])}
+
+  #rawData 
+    =JSON.stringify(dataPayload)

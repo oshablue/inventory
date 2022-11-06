@@ -1,0 +1,23 @@
+extends index
+
+block append layout-content
+
+  #bomDetails 
+    hr
+    h3 InventoryStmts List
+
+    table.table.bordered.small
+      tr 
+        each key in keysPayload 
+          th #{key}
+        each doc in dataPayload
+          tr
+            each key in keysPayload
+              if key === "inventoryStmt_id"
+                td 
+                  a(href="/api/v1/inventoryStmts/" + doc[key]) Edit #{doc[key]}
+              else
+                td #{JSON.stringify(doc[key])}
+
+  #rawData 
+    =JSON.stringify(dataPayload)

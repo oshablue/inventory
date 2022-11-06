@@ -1,0 +1,22 @@
+extends layout
+
+block layout-content
+  div.View
+    h1.Banner Inventory
+    div.btn-group
+      a(href="/index.html")
+        div.btn Base 
+      a(href="/api-explorer/")
+        div.btn API Reference Interactive 
+      a(href="/api/v1/")
+        div.btn API Base (v1)
+      a(href="/api/v1/components/")
+        div.btn Components
+      a(href="/api/v1/boms/")
+        div.btn BOMs
+      a(href="/api/v1/inventoryStmts/")
+        div.btn InventoryStmts
+    div.JsonPayload 
+      p #{jsonPayload}
+    div.HtmlPayload 
+      p !{htmlPayload}

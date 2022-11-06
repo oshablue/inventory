@@ -1,0 +1,8 @@
+//- assumes this is nested with an each/in loop 
+//- where line is the current lineItem
+select(name="component").select.input--xs
+  option(value=null) Not Set 
+  each comp in componentsPayload 
+    - var oid = comp._id.toString()
+    - var vid = dataPayload ? (dataPayload.component ? dataPayload.component._id.toString() : "") : ""
+    option(value=comp._id selected=(oid === vid)) #{comp.name} #{oid}

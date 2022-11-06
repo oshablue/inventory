@@ -1,0 +1,35 @@
+//- componentSelectionEventsSection
+//- cses is defined in parent template
+//- Relevant payload:
+//-   componentSelectionEventKeysPayload
+//-   componentSelectionEventTypesPayload
+div#componentSelectionEventsTable
+  table.table.bordered.small 
+    thead 
+      each key in componentSelectionEventKeysPayload 
+        th(class=key) #{key} 
+    tr
+      //- Blank row for adding a new event
+      each key in componentSelectionEventKeysPayload 
+        if key === "eventType"
+          td 
+            select(name="eventType").select.input--xs
+              each eType in componentSelectionEventTypesPayload
+                option(value=eType) #{eType}
+        else 
+          td 
+            input(type='text' name=key label=key).input--xs
+        //- TODO keys _id, created/updated_at - make non-writable or etc.
+    each cse in cses 
+      tr 
+        each key in componentSelectionEventKeysPayload 
+          if key === "eventType"
+            td 
+              select(name="eventType").select.input--xs 
+                each eType in componentSelectionEventTypesPayload 
+                  option(value=eType selected=(cse.eventType===eType)) #{eType}
+          else 
+            td 
+              input(type='text' name=key label=key value=cse[key]).input--xs
+    //- Update button / add button here? 
+

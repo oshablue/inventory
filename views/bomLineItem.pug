@@ -1,0 +1,221 @@
+extends index
+
+block append layout-content
+
+  div#bomLineItemDetails 
+    hr
+    h3 BOM Line Item Details
+    //-each val, key in dataPayload  //- TODO actually now need to send and load ALL fields not just present fields
+    //-  | #{key}
+    each key in keysPayload 
+      | #{key}
+      if key === "component"
+        td 
+          include bomLineItemComponentsSelectList
+      else if key === 'qtyPerBoard'
+        - let v = dataPayload.refDess.toString()||"" //- TODO this should prob be virt in model
+        - let m = (v.match(/,/g) || []).length
+        - let c = m ? "," : " "
+        - let q = v ? v.split(c).length : 0
+        input(type='text' disabled=true name=key label=key value=q).input--xs.input--xxs
+      else if key === 'inventoryStmts'
+        - var invStmts = dataPayload.component.inventoryStmts ? dataPayload.component.inventoryStmts : "" 
+        //-a(href="/api/v1/inventoryStmts/" + doc[key]) Edit #{doc[key]}
+        input(type='text' name=key label=key value=invStmts).input--xs
+        //- include bomLineItemInventoryStmts.pug
+      else if key === 'componentSelectionEvents'
+        - var cses = dataPayload.componentSelectionEvents || ""
+        include componentSelectionEventsTable
+      else 
+        input(type='text' name=key label=key value=(dataPayload[key].toString())).input--xs
+      br
+
+      //- Need to now convert the componentType to dropdown?
+      //- probably need to put in there also then some return of the componentType 
+      //- list from the controller
+
+    button#submit(onclick="updateIS()")   
+      | Update 
+
+    button#backToBom(onclick="backToBom()")
+      | Back to BOM 
+
+
+  div#dataPayload
+    pre
+      =JSON.stringify(dataPayload, null, 4)
+
+  div#lineItemsSchemaKeysPayload
+    =JSON.stringify(lineItemsSchemaKeysPayload)
+  
+  div#componentsPayload 
+    pre 
+      =JSON.stringify(componentsPayload, null, 4)
+  
+  div#bomPayload 
+    pre 
+      =JSON.stringify(bomPayload, null, 4)
+
+
+
+
+  script. 
+
+
+
+
+    $(document).ready( function () {
+      $('select[name="component"]').on("change", updateComponentId);
+    });
+
+
+
+    var backToBom = function() {
+      let bomJson = JSON.parse($('#bomPayload').text());
+      let url = '/api/v1/boms/' + bomJson.bom_id;
+      location.assign(url);
+    }
+
+
+
+
+    var updateComponentId = function() {
+      //alert($(this).val());
+      let cseRow = $('#componentSelectionEventsTable').find('tbody > tr').first();
+      let compInput = cseRow.find('td > input').filter('[name="component"]');
+      if ( !cseRow.find('td > input').filter('[name="_id"]').val() ) {
+        compInput.val($(this).val());
+        cseRow.find('td > select').val("Updated");
+        cseRow.find('td > input').filter('[name="note"]').val("Add note");
+        cseRow.find('td > input').filter('[name="createdAt"]').val(Date.now());
+        cseRow.find('td > input').filter('[name="updatedAt"]').val(Date.now());
+      } else {
+        console.log("not updating the component _id in the componentSelectionEventsTable first row because it is not empty");
+      }
+    }
+
+
+
+
+
+
+
+    // TODO NOW
+    // TODO also on component change - first row blank, its _id should go in the componentSelectionEvent component id input
+
+    var updateIS = function() {
+
+      // Re-constitute the whole BOM for eventual sub the updated line item and then store
+      let wholeBom = JSON.parse($('#bomPayload').text());
+
+
+      // And this time around we'll just manually build this out versus auto collecting keys / values
+      let lineItem = {};
+      let lineItemId = $('#bomLineItemDetails').find('input[type=text][name="_id"]').not($('#componentSelectionEventsTable').find('input')).val();
+      let lineNumber = $('#bomLineItemDetails').find('input[type=text][name="lineNumber"]').val();
+      let refDess = $('#bomLineItemDetails').find('input[type=text][name="refDess"]').val();
+      let component = $('#bomLineItemDetails').find(':selected').not($('#componentSelectionEventsTable').find(':selected')).val();
+
+      let cseRowKeys = $('#componentSelectionEventsTable').find('thead > tr > th').text().trim().split(' '); // should be array of e.g. 6 keys 
+      let cseRows = $('#componentSelectionEventsTable').find('tbody > tr');
+      // TODO above 2 lines - make sure that if a new event was added it is included, and if blank/default, it is not !
+      lineItem["componentSelectionEvents"] = [];
+      let cses = [];
+      $(cseRows).each( function (ind, row) {
+        let cse = {}
+        let rowValues = $(row).find('td > input,select');
+        cseRowKeys.forEach( function (key, ind) { // note plain JS forEach on the array with order of params reversed compared with jQ each above ... !
+          let val = $(rowValues).filter('[name=' + key + ']').val().trim();
+          if ( key === '_id' && val === '') { 
+            // skip blank _id of new entries
+          } else {
+            cse[key] = val;
+          }
+        });
+        // let eventTypeKeyName = $(row).find('td').find('select').attr('name');
+        // $(row).find('td').find('input, select').last().attr('name'); // first() is the select in this case
+        cses.push(cse);
+      });
+      // sort cses by newest first
+      console.log(cses);
+      cses = cses.sort( function ( cse1, cse2 ) { return cse1.created_at < cse2.created_at; });
+      console.log(cses);
+      // dataPayload.lineItems = dataPayload.lineItems.sort ( function (li1, li2) { return li1.lineNumber - li2.lineNumber; });
+      cses.forEach( function (cse, ind) {
+        if ( cse.component.trim() ) {
+          lineItem.componentSelectionEvents.push(cse);
+        }
+      });
+
+
+      // inventoryStmts is pulled out from the component population - so that data should probably not change here and 
+      // thus should not be populated or sent to the bom line update (really the whole bom update)
+
+      lineItem["_id"] = lineItemId;
+      lineItem["lineNumber"] = lineNumber;
+      lineItem["refDess"] = refDess;
+      lineItem["component"] = component;
+
+      console.log(lineItem);
+
+      let bomJson = JSON.parse($('#bomPayload').text());
+      let lineItemIndex = bomJson.lineItems.findIndex(v => v._id === lineItemId );
+      bomJson.lineItems[lineItemIndex] = lineItem;
+
+      
+      fetch('/api/v1/boms/' + bomJson.bom_id, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(bomJson)
+      })
+      .then(res => {
+        //console.log(res);
+        // res.json() will pull the json data object only out of the response object
+        return res; //.json();
+        // TODO *** in controller or here need to probably reload the page with updated data ***
+      })
+      .then(data => {
+        console.log(data);
+        // TODO move this to middleware? util script?
+        if ( data.status === 200 ) {
+          //location.reload();
+          let e = $('#bomLineItemDetails');
+          $(e).addClass('updateOk');
+          jQuery('<div>', {
+            id: 'tempNotification',
+            class: 'bg-success u-inline u-round-xs p-1 mx-4', // from cirrus-ui
+            title: 'Just letting you know ...',
+            text: "Update OK!"
+          }).appendTo(e);
+          data.json()
+          .then( (justTheSent) => {
+            console.log(justTheSent);
+            let rde = $("#rawData");
+            $(rde).html(JSON.stringify(justTheSent));
+            $(rde).addClass('bg-success text-indigo-600');      // class from cirrus-ui
+            setTimeout ( () => {
+              // https://jqueryui.com/removeClass/
+              // can add callback for completion after 2000
+              $(rde).removeClass('bg-success text-indigo-600', 1500); 
+            }, 800, rde);
+          })
+          setTimeout ( () => {
+            // https://jqueryui.com/removeClass/
+            // can add callback for completion after 2000
+            $(e).removeClass('updateOk', 1000, () => {
+              setTimeout(function() {
+                $('#tempNotification').remove();
+              }, 500 );
+            }); 
+          }, 1000, e);
+          setTimeout ( () => {
+            location.reload();
+          }, 2000);
+        }
+      });
+      // TODO so now what to do with the UI -- the controller sends 200
+      // but how do we get the page reloaded or the section reloaded?
+      // Or just flash ok or error --- 
+    }

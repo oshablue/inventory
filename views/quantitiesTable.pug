@@ -1,0 +1,16 @@
+//- derived from bomLineItemsTable - see examples of conditional pug there including initial sort of lineItems by line number
+table.table.bordered.small
+  thead 
+    each key in lineItemsSchemaKeysPayload 
+      th(class=key) #{key}
+  //- first row is blank/default inputs for adding a new entry
+  tr
+    each key in lineItemsSchemaKeysPayload 
+      td 
+        input(type='text' name=key label=key).input--xs
+  //- then real existing entries
+  each lineItem in dataPayload.quantities
+    tr
+      each key in lineItemsSchemaKeysPayload
+        td
+          input(type='text' name=key title=lineItem[key] label=key value=lineItem[key]||"").input--xs.input--xxs

@@ -1,0 +1,428 @@
+openapi: 3.0.1
+info:
+  title: express-mongoose-template
+  description: express-mongoose-template
+  version: 1.0.0
+servers:
+  - url: /api/v1
+tags:
+  - name: Examples
+    description: Simple example endpoints
+  - name: Specification
+    description: The swagger API specification
+paths:
+  /examples:
+    get:
+      tags:
+        - Examples
+      description: Fetch all examples
+      responses:
+        200:
+          description: Returns all examples
+          content: {}
+    post:
+      tags:
+        - Examples
+      description: Create a new example
+      requestBody:
+        description: an example
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExampleBody"
+        required: true
+      responses:
+        201:
+          description: Example created
+  /examples/{id}:
+    get:
+      tags:
+        - Examples
+      parameters:
+        - name: id
+          in: path
+          description: The id of the example to retrieve
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Return the example with the specified id
+          content: {}
+        404:
+          description: Example not found
+          content: {}
+  /spec:
+    get:
+      tags:
+        - Specification
+      responses:
+        200:
+          description: Return the API specification
+          content: {}
+  /components:
+    get:
+      tags:
+        - Components
+      description: Fetch all components
+      responses:
+        200:
+          description: Returns all components
+          content: {}
+    post:
+      tags:
+        - Components
+      description: Create a new component
+      requestBody:
+        description: a component
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ComponentBody"
+        required: true
+      responses:
+        201:
+          description: Component created
+  /components/{id}:
+    get:
+      tags:
+        - Components
+      parameters:
+        - name: id
+          in: path
+          description: The id of the example to retrieve
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Return the component with the specified id
+          content: {}
+        404:
+          description: Component not found
+          content: {}
+    put:
+      tags:
+        - Components
+      parameters:
+        - name: id
+          in: path
+          description: The id of the example to update
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        description: a component
+        content:
+          application/json:
+            schema:
+              type: object
+        required: true
+      responses:
+        200:
+          description: Return the component with the specified id
+          content: {}
+        404:
+          description: Component not found
+          content: {}
+  /componentTypes:
+    get:
+      tags:
+        - ComponentTypes
+      description: Fetch all componentTypes
+      responses:
+        200:
+          description: Returns all componentTypes
+          content: {}
+    post:
+      tags:
+        - ComponentTypes
+      description: Create a new componentType
+      requestBody:
+        description: a componentType
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ComponentTypeBody"
+        required: true
+      responses:
+        201:
+          description: componentType created
+  /componentTypes/{id}:
+    get:
+      tags:
+        - ComponentTypes
+      parameters:
+        - name: id
+          in: path
+          description: The id of the example to retrieve
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Return the componentType with the specified id
+          content: {}
+        404:
+          description: componentType not found
+          content: {}
+  /boms:
+    get:
+      tags:
+        - BOMs
+      description: Fetch all BOMs
+      responses:
+        200:
+          description: Returns all BOMs
+          content: {}
+    post:
+      tags:
+        - BOMs
+      description: Create a new BOM
+      requestBody:
+        description: a BOM
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BomBody"
+        required: true
+      responses:
+        201:
+          description: BOM created
+  /boms/{id}:
+    delete:
+      tags:
+        - BOMs
+      parameters:
+        - name: id
+          in: path
+          description: The id of the BOM to delete
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Return the number of BOMs deleted
+          content: {}
+        404:
+          description: BOM not found or not deleted
+          content: {}
+    get:
+      tags:
+        - BOMs
+      parameters:
+        - name: id
+          in: path
+          description: The id of the BOM to retrieve
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Return the BOM with the specified id
+          content: {}
+        404:
+          description: BOM not found
+          content: {}
+    put:
+      tags:
+        - BOMs
+      parameters:
+        - name: id
+          in: path
+          description: The id of the BOM to update
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        description: a BOM
+        content:
+          application/json:
+            schema:
+              type: object
+        required: true
+      responses:
+        200:
+          description: Return the BOM with the specified id
+          content: {}
+        404:
+          description: BOM not found
+          content: {}
+  /boms/{id}/export:
+    get:
+      tags:
+        - BOMs
+      parameters:
+        - name: id
+          in: path
+          description: The id of the BOM to export
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Return the BOM exported as csv with the specified id
+          content: {}
+        404:
+          description: BOM not found - cannot export
+          content: {}
+  /boms/{id}/cseEdit/{lineItemId}:
+    get:
+      tags:
+        - BOMs
+      parameters:
+        - name: id
+          in: path
+          description: The id of the BOM in which to edit a lineItem
+          required: true
+          schema:
+            type: integer
+        - name: lineItemId
+          in: path
+          description: The id of the lineItem to edit
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Return the BOM lineItem
+          content: {}
+        404:
+          description: BOM not found or lineItem for BOM not found - cannot export
+          content: {}
+  /inventoryStmts:
+    get:
+      tags:
+        - InventoryStmts
+      description: Fetch all inventoryStmts
+      responses:
+        200:
+          description: Returns all inventoryStmts
+          content: {}
+    post:
+      tags:
+        - InventoryStmts
+      description: Create a new inventoryStmt
+      requestBody:
+        description: an inventoryStmt
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryStmtBody"
+        required: true
+      responses:
+        201:
+          description: InventoryStmt created
+  /inventoryStmts/{id}:
+    get:
+      tags:
+        - InventoryStmts
+      parameters:
+        - name: id
+          in: path
+          description: The id of the example to retrieve
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Return the inventoryStmt with the specified id
+          content: {}
+        404:
+          description: inventoryStmt not found
+          content: {}
+    put:
+      tags:
+        - InventoryStmts
+      parameters:
+        - name: id
+          in: path
+          description: The id of the inventoryStmt to update
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        description: an inventoryStmt
+        content:
+          application/json:
+            schema:
+              type: object
+        required: true
+      responses:
+        200:
+          description: Return the inventoryStmt with the specified id
+          content: {}
+        404:
+          description: inventoryStmt not found
+          content: {}
+components:
+  schemas:
+    ExampleBody:
+      title: example
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          type: string
+          example: no_stress
+    ComponentBody:
+      title: component
+      required: 
+        - name 
+        - description 
+        - mfg 
+        - mpn
+      type: object 
+      properties:
+        name: 
+          type: string 
+          example: the_name 
+        description:
+          type: string 
+          example: long_description 
+        mfg: 
+          type: string
+          example: manufacturer_name 
+        mpn: 
+          type: string 
+          example: manufacturer_part_number
+        componentType:
+          type: string
+          example: componentType_ObjectId
+    ComponentTypeBody:
+      title: componentType
+      required: 
+        - name 
+        - description 
+      type: object 
+      properties:
+        name: 
+          type: string 
+          example: the_name 
+        description:
+          type: string 
+          example: long_description 
+    BomBody:
+      title: bom
+      required:
+        - name  
+      type: object 
+      properties:
+        name:
+          type: string 
+          example: long_description
+    InventoryStmtBody:
+      title: inventoryStmt
+      required: 
+        - quantities
+        - component
+      type: object 
+      properties:
+        quantities: 
+          type: string 
+          example: array of at least one of quantity packaging packagingSpec and location 
+        component:
+          type: string 
+          example: component_id number of a component 
+
