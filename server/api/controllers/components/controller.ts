@@ -100,6 +100,7 @@ export class Controller {
         req.body);
       return res.status(200).send(doc);
     } catch (err) {
+      console.log(err);
       return next(err);
     }
   }

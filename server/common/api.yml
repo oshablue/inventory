@@ -390,6 +390,9 @@ components:
         componentType:
           type: string
           example: componentType_ObjectId
+        component_id:
+          type: number 
+          example: unique component number 
     ComponentTypeBody:
       title: componentType
       required: 

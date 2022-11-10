@@ -23,8 +23,9 @@ export class ComponentsService {
   }
 
   async create(data: IComponentModel): Promise<IComponentModel> {
-    l.info(`create component with data ${data}`);
+    l.info(`create component with data ${JSON.stringify(data, null, 4)}`);
     const component = new Component(data);
+    l.info(`create component with data ${JSON.stringify(component, null, 4)}`);
     const doc = (await component.save()) as IComponentModel;
     return doc;
   }

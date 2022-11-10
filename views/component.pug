@@ -80,6 +80,10 @@ block append layout-content
         }
       });
       jj["dists"] = dists;
+      // Remove Not Set as this is not actually an object in storage (yet?)
+      if ( jj.componentType === "Not Set") {
+        delete jj.componentType;
+      }
       //console.log(distribDivs);
       //console.log(dists)
       console.log(jj);
