@@ -70,7 +70,10 @@ const schema = new mongoose.Schema(
           "DK",
           "MSR",
           "NWK",
-          "ALLIEDELEC",
+          "ALLIED",
+          "ARROW",
+          "AVNET",
+          "QUEST",
           "MFG Direct",
           "Not Set"
         ],

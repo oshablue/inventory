@@ -100,4 +100,15 @@ For just the inventory dB and replacing it, use the --db and --drop options belo
 > mongorestore --drop dump # automatically uses the inventory dir inside and drops existing inventory to replace; use credentials like above
 ```
 
+### Example mongo Queries
+
+```
+>
+> use inventory
+> db.components.find({"dists.dist":"NWK"})
+> db.components.find({"dists.dist":"DK"})
+> db.components.distinct("dists.dist")
+[ "DK", "MSR", "NWK" ]
+
+```
 

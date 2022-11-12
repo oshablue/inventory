@@ -25,8 +25,9 @@ table.table.bordered.small
               - v = v.toString(); //- .replace(/^\[/,''); //- not needed (yet)
               input(type='text' name=key label=key value=v).input--xs.input--xxs 
           else if key === "component"
-            td 
-              include componentsSelectList.pug
+            td.left
+              //- include componentsSelectList.pug
+              a(href="/api/v1/components/" + lineItem.component.component_id) (#{lineItem.component.component_id}) #{lineItem.component.name} #{lineItem.component.mfg} #{lineItem.component.mpn}
           else if key === "inventoryStmts"
             td 
               - let iss = (lineItem.component && lineItem.component.inventoryStmts) ? lineItem.component.inventoryStmts : []    //- if nothing will come back as empty array

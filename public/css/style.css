@@ -56,3 +56,7 @@ pre {
 #lineItemsTable > table th.componentSelectionEvents {
   width: 100px;
 }
+
+#lineItemsTable > table td.left {
+  text-align: left;
+}
