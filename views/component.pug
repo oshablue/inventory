@@ -133,6 +133,9 @@ block append layout-content
               }, 500 );
             }); 
           }, 1000, e);
+          setTimeout( () => {
+            location.reload();
+          }, 2000);
         }
       });
       // TODO so now what to do with the UI -- the controller sends 200

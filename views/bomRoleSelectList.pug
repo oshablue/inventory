@@ -1,0 +1,5 @@
+//- assumes this is nested with an each/in loop 
+//- where line is the current lineItem
+select(name="bomRole").select.input--xs
+  each bRole in bomRolesEnumPayload 
+    option(value=bRole selected=(lineItem.bomRole===bRole)) #{bRole}

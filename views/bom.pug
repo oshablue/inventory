@@ -103,7 +103,13 @@ block append layout-content
       let lineItemRows = $('#lineItemsTable').find('tbody > tr');
       let lineItems = [];
       $(lineItemRows).each( function (ind, val) {
-        let compIdFromSelect = $(this).find('select').val();
+        // TODO we no longer use a select for this -- so we need to grab the data-id or something 
+        // from a div and the check what the val() was for the select -- probably it was the actual
+        // objectId -- yes the _id
+        // But now we have a select for the bomRole - so make sure that select val is no longer grabbed 
+        // old: // let compIdFromSelect = $(this).find("input[name='components']").val(); // XXX wrong TODO
+        // new: for not a select list for components, just the link:
+        let compIdFromSelect = $(this).find("a[name='componentLink']").attr("data-component-id");
         // $(this).find("input[name='componentSelectionEvents']").attr("data-cseid")
         // or if in the td holding the input then could use like .parent("td").attr("...)
         // first row likely blank for additional input methods
@@ -111,11 +117,17 @@ block append layout-content
         if ( compIdFromSelect && compIdFromCse ) {
           if ( compIdFromSelect !== compIdFromCse ) {
             $(this).find("input[name='componentSelectionEvents']").addClass("bg-danger").attr("title", "Component Ids in Select and selection event showing as current do not match!");
+          } else {
+            //console.log("component ids match ok for selection event and the selected comp");
           }
         }
       });
 
     } // </ checkRows() >
+
+
+
+
 
 
 
@@ -136,6 +148,10 @@ block append layout-content
         });
 
     } // </ deleteBom >
+
+
+
+
 
 
 
@@ -168,14 +184,17 @@ block append layout-content
       $(lineItemRows).each( function (ind, val) {
         let addThisRow = false;
         let rowVals = {};
-        let comp_id = $(this).find('select').val();
-        addThisRow = comp_id !== "Not Set" ? true : addThisRow;
+        //let comp_id = $(this).find('select').val(); // select used to be component only and val was _id 
+        let comp_id = $(this).find("a[name='componentLink']").attr("data-component-id");
+        addThisRow = comp_id && (comp_id !== "Not Set" ? true : addThisRow);
         $(this).find('input[type="text"]').each( function (ind, val) {
           rowVals[$(this).attr('name')] = $(this).val();
           addThisRow = $(this).val().trim() !== '' ? true : addThisRow;
         });
         if ( addThisRow ) {
           comp_id === "Not Set" ? rowVals['component'] = '' : rowVals['component'] = comp_id;
+          let bomRole = $(this).find("select[name='bomRole']").val();
+          bomRole === "Not Set" ? rowVals['bomRole'] = '' : rowVals['bomRole'] = bomRole;
           let rowIndex = j.lineItems.findIndex(v => v._id === rowVals._id);
           rowVals["componentSelectionEvents"] = j.lineItems[rowIndex].componentSelectionEvents;
           // For duplicate / derived BOM here, remove the cse and row _id's
@@ -262,6 +281,12 @@ block append layout-content
     } // </ deriveNewBom() >
     
 
+
+
+
+
+
+
     var exportBom = function() {
 
       let lineItemsInputs = $('#lineItemsTable').find('input[type=text], select');
@@ -331,6 +356,10 @@ block append layout-content
 
 
 
+
+
+
+
     var updateBom = function() {
       // find rows in body only excluding the header:
       // $('#lineItemsTable').find('tbody > tr')
@@ -376,8 +405,9 @@ block append layout-content
         // the .val() function will return the option text instead aka Not Set here
         // Setting value=null in pug in the actual DOM / markup just creates no value 
         // attribute in the select option for that item
-        let comp_id = $(this).find('select').val();
-        addThisRow = comp_id !== "Not Set" ? true : addThisRow;
+        //let comp_id = $(this).find('select').val(); // select used to be component only and val was _id 
+        let comp_id = $(this).find("a[name='componentLink']").attr("data-component-id");
+        addThisRow = comp_id && (comp_id !== "Not Set" ? true : addThisRow);
         //$(this).find('input[type="text"]').not('[name="_id"]').each( function (ind, val) {
         $(this).find('input[type="text"]').each( function (ind, val) {
           // TODO refDess from csv to array? format? sanitize?
@@ -386,6 +416,8 @@ block append layout-content
         });
         if ( addThisRow ) {
           comp_id === "Not Set" ? rowVals['component'] = '' : rowVals['component'] = comp_id;
+          let bomRole = $(this).find("select[name='bomRole']").val();
+          bomRole === "Not Set" ? rowVals['bomRole'] = '' : rowVals['bomRole'] = bomRole;
           let rowIndex = j.lineItems.findIndex(v => v._id === rowVals._id);
           rowVals["componentSelectionEvents"] = j.lineItems[rowIndex].componentSelectionEvents;
           lineItems.push(rowVals);

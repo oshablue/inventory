@@ -69,12 +69,15 @@ export class Controller {
       let lineItemSchemaKeys = Object.keys(bom_1.Bom.schema.path('lineItems').schema.paths);
       // add some inventoryStmts from the Component model (it's a virtual)
       lineItemSchemaKeys.push('inventoryStmts');
+      let bomRolesEnumPayload = 
+        bom_1.Bom.schema.path('lineItems').schema.path('bomRole').enumValues;
       if (doc) {
         return res.status(200).render("bom", { 
           dataPayload: doc, 
           componentsPayload: comps,
           keysPayload: schemaKeys,
-          lineItemsSchemaKeysPayload: lineItemSchemaKeys
+          lineItemsSchemaKeysPayload: lineItemSchemaKeys,
+          bomRolesEnumPayload: bomRolesEnumPayload
         });
       }
       const errors = [{ message: "Bom not found" }];

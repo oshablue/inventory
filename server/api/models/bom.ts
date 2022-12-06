@@ -27,7 +27,10 @@ export interface IBomModel extends mongoose.Document {
           component: PopulatedDoc<IComponentModel>;
           note: string;
         }
-      ]
+      ],
+      bomRole: {
+        type:  string;
+      }
     }
   ]
 }
@@ -77,7 +80,14 @@ const schema = new mongoose.Schema(
               }
             )
           }
-        ]
+        ],
+        bomRole: {
+          type: String,
+          enum: [
+            "Not Set", "Turnkey", "DO NOT INSTALL (DNP / DNI)", "Consigned / Kitted"
+          ],
+          default: "Turnkey"
+        }
       }
     ]
   },

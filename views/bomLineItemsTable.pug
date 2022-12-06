@@ -9,6 +9,11 @@ table.table.bordered.small
       if key === "component"
         td 
           include componentsSelectList.pug
+      else if key === "bomRole"
+        td 
+          select(name="bomRole").select.input--xs
+            each bRole in bomRolesEnumPayload 
+              option(value=bRole) #{bRole}
       else
         td 
           input(type='text' name=key label=key).input--xs
@@ -24,10 +29,13 @@ table.table.bordered.small
               - let v = lineItem[key]||"";
               - v = v.toString(); //- .replace(/^\[/,''); //- not needed (yet)
               input(type='text' name=key label=key value=v).input--xs.input--xxs 
+          else if key === "bomRole"
+            td 
+              include bomRoleSelectList.pug
           else if key === "component"
             td.left
               //- include componentsSelectList.pug
-              a(href="/api/v1/components/" + lineItem.component.component_id) (#{lineItem.component.component_id}) #{lineItem.component.name} #{lineItem.component.mfg} #{lineItem.component.mpn}
+              a(href="/api/v1/components/" + lineItem.component.component_id name="componentLink" data-component-id=lineItem.component._id) (#{lineItem.component.component_id}) #{lineItem.component.name} #{lineItem.component.mfg} #{lineItem.component.mpn}
           else if key === "inventoryStmts"
             td 
               - let iss = (lineItem.component && lineItem.component.inventoryStmts) ? lineItem.component.inventoryStmts : []    //- if nothing will come back as empty array

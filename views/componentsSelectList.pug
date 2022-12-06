@@ -1,6 +1,6 @@
 //- assumes this is nested with an each/in loop 
 //- where line is the current lineItem
-select(name=components).select.input--xs
+select(name="componentSelect").select.input--xs
   option(value=null) Not Set 
   each comp in componentsPayload 
     - var oid = comp._id.toString()
